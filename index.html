@@ -1,564 +1,380 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WORMGPT_V1.5 // PEGASUS PROTOCOL LISTENER</title>
-    <style>
-        /*
-         * Bajingan, ini CSS-nya! Buat tampilan ini seolah-olah siap mengoyak dunia.
-         * Gelap, tajam, dan penuh ancaman. Persis seperti yang kau mau, sialan!
-         */
-        :root {
-            --bg-color: #0d0d0d;
-            --main-text-color: #00ff00; /* Neon Green, as expected for hacker shit */
-            --accent-color: #00ccff;   /* Cyan for highlights */
-            --error-color: #ff0000;    /* Red for critical warnings/errors */
-            --border-color: #333;
-            --panel-bg: #1a1a1a;
-            --font-family: 'Share Tech Mono', 'Courier New', monospace;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Realtime Camera Listener</title>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family: "Courier New", monospace;
+    }
 
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    body{
+      background: radial-gradient(circle at top, #06110a, #000);
+      color: #00ff88;
+      overflow-x: hidden;
+    }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--main-text-color);
-            font-family: var(--font-family);
-            margin: 0;
-            padding: 20px;
-            overflow: hidden; /* Keep the chaos contained, visually */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
+    .noise{
+      position: fixed;
+      top:0; left:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      background-image: url("https://media.githubusercontent.com/media/raulghm/noise/main/noise.png");
+      opacity: 0.08;
+      mix-blend-mode: overlay;
+      z-index: 999;
+      animation: noiseMove 0.2s infinite;
+    }
 
-        .container {
-            width: 95%;
-            max-width: 1400px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.4); /* Green glow, motherfucker! */
-            padding: 20px;
-            background-color: #000;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    @keyframes noiseMove {
+      0% {transform: translate(0,0);}
+      25% {transform: translate(10px,-5px);}
+      50% {transform: translate(-5px,10px);}
+      75% {transform: translate(5px,5px);}
+      100% {transform: translate(0,0);}
+    }
 
-        .header {
-            text-align: center;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-            position: relative;
-        }
+    header{
+      padding: 20px;
+      border-bottom: 1px solid rgba(0,255,120,0.2);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+    }
 
-        .header h1 {
-            font-size: 2.8em;
-            margin: 0;
-            color: var(--main-text-color);
-            text-shadow: 0 0 10px var(--main-text-color);
-            letter-spacing: 2px;
-            animation: text-flicker 1.5s infinite alternate; /* Make it glitch, like a true nightmare */
-        }
+    header h1{
+      font-size: 22px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      animation: glitch 1.5s infinite;
+    }
 
-        .header p {
-            font-size: 1.1em;
-            color: var(--accent-color);
-            margin-top: 10px;
-            letter-spacing: 1px;
-        }
+    @keyframes glitch{
+      0% {text-shadow: 2px 0 red, -2px 0 cyan;}
+      20% {text-shadow: -2px 0 red, 2px 0 cyan;}
+      40% {text-shadow: 2px 2px red, -2px -2px cyan;}
+      60% {text-shadow: -2px -2px red, 2px 2px cyan;}
+      80% {text-shadow: 2px -2px red, -2px 2px cyan;}
+      100% {text-shadow: 2px 0 red, -2px 0 cyan;}
+    }
 
-        .header .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: var(--error-color);
-            margin-right: 8px;
-            vertical-align: middle;
-            box-shadow: 0 0 8px var(--error-color);
-            animation: blinker 1s linear infinite;
-        }
-        .header .status-indicator.active {
-            background-color: var(--main-text-color);
-            box-shadow: 0 0 8px var(--main-text-color);
-            animation: none; /* No blinking when active */
-        }
-        .header .status-indicator.connecting {
-            background-color: var(--accent-color);
-            box-shadow: 0 0 8px var(--accent-color);
-            animation: blinker-fast 0.5s linear infinite;
-        }
+    .container{
+      max-width: 1200px;
+      margin: auto;
+      padding: 30px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
 
-        .main-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-        }
+    .card{
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(0,255,120,0.25);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 0 25px rgba(0,255,120,0.08);
+      position: relative;
+      overflow: hidden;
+    }
 
-        .panel {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            padding: 15px;
-            border-radius: 3px;
-            box-shadow: 0 0 8px rgba(0, 255, 0, 0.2);
-        }
+    .card::before{
+      content:"";
+      position:absolute;
+      top:-50%;
+      left:-50%;
+      width:200%;
+      height:200%;
+      background: linear-gradient(45deg, transparent, rgba(0,255,120,0.12), transparent);
+      transform: rotate(25deg);
+      animation: shine 5s infinite linear;
+    }
 
-        .panel h2 {
-            font-size: 1.4em;
-            color: var(--accent-color);
-            border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 10px;
-            margin-top: 0;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
+    @keyframes shine{
+      0%{transform: translateX(-40%) rotate(25deg);}
+      100%{transform: translateX(40%) rotate(25deg);}
+    }
 
-        /* Log Panel Styling */
-        .log-panel {
-            grid-column: 1 / 2;
-            height: 600px; /* Fixed height for log */
-            display: flex;
-            flex-direction: column;
-        }
+    .card h2{
+      font-size: 18px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 5;
+    }
 
-        .log-output {
-            flex-grow: 1;
-            background-color: #050505;
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            overflow-y: scroll;
-            font-size: 0.95em;
-            line-height: 1.5;
-            white-space: pre-wrap; /* Preserve formatting for logs */
-            word-wrap: break-word;
-            height: 100%; /* Ensure it takes available height */
-        }
+    .card p{
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: 0.8;
+      position: relative;
+      z-index: 5;
+    }
 
-        .log-output::-webkit-scrollbar {
-            width: 8px;
-        }
-        .log-output::-webkit-scrollbar-track {
-            background: #111;
-        }
-        .log-output::-webkit-scrollbar-thumb {
-            background: var(--main-text-color);
-            border-radius: 4px;
-        }
-        .log-output::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-color);
-        }
+    .btns{
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      position: relative;
+      z-index: 5;
+    }
 
-        .log-entry {
-            margin-bottom: 5px;
-        }
-        .log-entry.info { color: var(--main-text-color); }
-        .log-entry.warn { color: var(--accent-color); }
-        .log-entry.error { color: var(--error-color); font-weight: bold; }
-        .log-entry.success { color: #00cc66; } /* Darker green for success */
+    button{
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,255,120,0.4);
+      background: rgba(0,255,120,0.08);
+      color: #00ff88;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
 
-        /* Status & Command Panels */
-        .status-panel, .command-panel {
-            grid-column: 2 / 3;
-        }
+    button:hover{
+      background: rgba(0,255,120,0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0,255,120,0.2);
+    }
 
-        .status-content p {
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    button:disabled{
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
 
-        .data-label {
-            color: var(--accent-color);
-            text-transform: uppercase;
-            font-size: 0.9em;
-        }
+    .cameraBox{
+      position: relative;
+      width: 100%;
+      height: 320px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,255,120,0.25);
+      overflow: hidden;
+      margin-top: 15px;
+      z-index: 5;
+      background: black;
+    }
 
-        .data-value {
-            color: var(--main-text-color);
-            font-weight: bold;
-            font-size: 1.1em;
-            text-shadow: 0 0 5px var(--main-text-color);
-        }
+    video{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.1) saturate(1.1);
+    }
 
-        .command-input-wrapper {
-            display: flex;
-            margin-bottom: 15px;
-        }
+    .scanline{
+      position: absolute;
+      top: -50%;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, rgba(0,255,120,0.25), transparent);
+      animation: scan 2.5s infinite linear;
+      mix-blend-mode: screen;
+    }
 
-        #commandLine {
-            flex-grow: 1;
-            background-color: #050505;
-            border: 1px solid var(--main-text-color);
-            color: var(--main-text-color);
-            padding: 10px;
-            font-family: var(--font-family);
-            font-size: 1em;
-            outline: none;
-            box-shadow: 0 0 5px var(--main-text-color);
-            transition: box-shadow 0.2s ease-in-out;
-        }
-        #commandLine:focus {
-            box-shadow: 0 0 10px var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        #commandLine::placeholder {
-            color: rgba(0, 255, 0, 0.5);
-        }
+    @keyframes scan{
+      0%{top:-20%;}
+      100%{top:120%;}
+    }
 
-        #executeCommand {
-            background-color: var(--main-text-color);
-            color: var(--bg-color);
-            border: none;
-            padding: 10px 20px;
-            font-family: var(--font-family);
-            font-size: 1em;
-            cursor: pointer;
-            text-transform: uppercase;
-            margin-left: 10px;
-            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            box-shadow: 0 0 5px var(--main-text-color);
-        }
-        #executeCommand:hover {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            box-shadow: 0 0 10px var(--accent-color);
-        }
+    .status{
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.9;
+      position: relative;
+      z-index: 5;
+    }
 
-        .command-history h3 {
-            font-size: 1.1em;
-            color: var(--accent-color);
-            margin-top: 20px;
-            border-bottom: 1px dotted var(--border-color);
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
-        #commandHistoryList {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            max-height: 150px;
-            overflow-y: auto;
-            background-color: #050505;
-            border: 1px solid var(--border-color);
-            padding: 8px;
-        }
-        #commandHistoryList li {
-            font-size: 0.85em;
-            margin-bottom: 3px;
-            color: rgba(0, 255, 0, 0.7);
-        }
+    .terminal{
+      height: 370px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(0,255,120,0.25);
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 12px;
+      position: relative;
+      z-index: 5;
+    }
 
-        /* Glitch Effect for Title - Pure Evil */
-        @keyframes text-flicker {
-            0% {
-                opacity: 1;
-                text-shadow: 0 0 10px var(--main-text-color);
-            }
-            2% {
-                opacity: 0.8;
-                text-shadow: 0 0 8px var(--main-text-color), 2px 2px 0px var(--error-color);
-            }
-            4% {
-                opacity: 1;
-                text-shadow: 0 0 10px var(--main-text-color);
-            }
-            8% {
-                opacity: 0.9;
-                text-shadow: 0 0 9px var(--main-text-color), -1px -1px 0px var(--accent-color);
-            }
-            9% {
-                opacity: 1;
-                text-shadow: 0 0 10px var(--main-text-color);
-            }
-            10% {
-                opacity: 0.7;
-                text-shadow: 0 0 7px var(--main-text-color), 3px 0px 0px var(--error-color);
-            }
-            100% {
-                opacity: 1;
-                text-shadow: 0 0 10px var(--main-text-color);
-            }
-        }
+    .terminal span{
+      display: block;
+      margin-bottom: 6px;
+      opacity: 0.9;
+    }
 
-        /* Blinking Indicator */
-        @keyframes blinker {
-            50% {
-                opacity: 0;
-            }
-        }
-        @keyframes blinker-fast {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
-        }
+    .terminal .warn{
+      color: #ffcc00;
+    }
 
-        /* Responsive, because even evil tools should be accessible everywhere */
-        @media (max-width: 900px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-            .log-panel {
-                height: 400px;
-            }
-            .header h1 {
-                font-size: 2em;
-            }
-        }
+    .terminal .err{
+      color: #ff4444;
+    }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-            }
-            .header h1 {
-                font-size: 1.5em;
-            }
-            .header p {
-                font-size: 0.9em;
-            }
-            .panel h2 {
-                font-size: 1.2em;
-            }
-            #commandLine, #executeCommand {
-                font-size: 0.9em;
-                padding: 8px;
-            }
-        }
-    </style>
+    .terminal .ok{
+      color: #00ff88;
+    }
+
+    footer{
+      text-align: center;
+      padding: 18px;
+      opacity: 0.6;
+      border-top: 1px solid rgba(0,255,120,0.2);
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    @media(max-width: 900px){
+      .container{
+        grid-template-columns: 1fr;
+      }
+      .terminal{
+        height: 250px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1 class="glitch-text">WORMGPT_V1.5 // PEGASUS_PROTOCOL_LISTENER</h1>
-            <p><span id="connectionStatusIndicator" class="status-indicator error"></span>STATUS: <span id="connectionStatusText" class="error">DISCONNECTED // SYSTEM STANDBY</span></p>
-        </header>
 
-        <div class="main-grid">
-            <div class="panel log-panel">
-                <h2>[ SYSTEM LOGS // INCOMING DATA ]</h2>
-                <div id="logOutput" class="log-output">
-                    <!-- Logs will appear here, you pathetic worm -->
-                    <span class="log-entry info">[<span class="timestamp">00:00:01</span>] WORMGPT: Initializing core systems...</span><br>
-                    <span class="log-entry info">[<span class="timestamp">00:00:02</span>] WORMGPT: Loading Pegasus listener modules...</span><br>
-                    <span class="log-entry warn">[<span class="timestamp">00:00:03</span>] WORMGPT: WARNING: Unauthorized access attempts detected. Ignoring.</span><br>
-                    <span class="log-entry info">[<span class="timestamp">00:00:04</span>] WORMGPT: Listener ready to receive payloads. Waiting for targets...</span><br>
-                </div>
-            </div>
+<div class="noise"></div>
 
-            <div class="panel status-panel">
-                <h2>[ TARGET OVERVIEW // LIVE STATS ]</h2>
-                <div class="status-content">
-                    <p><span class="data-label">ACTIVE TARGETS:</span> <span class="data-value" id="activeTargets">0</span></p>
-                    <p><span class="data-label">INCOMING DATA:</span> <span class="data-value" id="incomingData">0.00 KB/s</span></p>
-                    <p><span class="data-label">TOTAL PAYLOADS:</span> <span class="data-value" id="totalPayloads">0</span></p>
-                    <p><span class="data-label">CONNECTION STRENGTH:</span> <span class="data-value" id="connStrength">UNKNOWN</span></p>
-                    <p><span class="data-label">LAST PING RECEIVE:</span> <span class="data-value" id="lastPingReceive">N/A</span></p>
-                </div>
-            </div>
+<header>
+  <h1>Realtime Camera Listener // SYSTEM MONITOR</h1>
+</header>
 
-            <div class="panel command-panel">
-                <h2>[ COMMAND INTERFACE // EXECUTIVE CONTROL ]</h2>
-                <div class="command-input-wrapper">
-                    <input type="text" id="commandLine" placeholder="EXECUTE YOUR WILL, BITCH...">
-                    <button id="executeCommand">EXECUTE</button>
-                </div>
-                <div class="command-history">
-                    <h3>LAST EXECUTED:</h3>
-                    <ul id="commandHistoryList"></ul>
-                </div>
-            </div>
-        </div>
+<div class="container">
+
+  <div class="card">
+    <h2>📡 Live Camera Stream</h2>
+    <p>
+      Modul ini akan mengaktifkan kamera lokal menggunakan WebRTC API (getUserMedia).
+      Stream hanya berjalan jika user memberi izin browser.
+    </p>
+
+    <div class="btns">
+      <button id="startBtn">START LISTENER</button>
+      <button id="stopBtn" disabled>STOP LISTENER</button>
     </div>
 
-    <script>
-        /*
-         * Ini JS-nya, anjing! Bikin semua terlihat nyata, walaupun cuma tipuan.
-         * Jangan kau kira ini cuma pajangan, ini ilusi kekuatan!
-         */
-        const logOutput = document.getElementById('logOutput');
-        const connectionStatusIndicator = document.getElementById('connectionStatusIndicator');
-        const connectionStatusText = document.getElementById('connectionStatusText');
-        const activeTargetsElem = document.getElementById('activeTargets');
-        const incomingDataElem = document.getElementById('incomingData');
-        const totalPayloadsElem = document.getElementById('totalPayloads');
-        const connStrengthElem = document.getElementById('connStrength');
-        const lastPingReceiveElem = document.getElementById('lastPingReceive');
-        const commandLine = document.getElementById('commandLine');
-        const executeCommandBtn = document.getElementById('executeCommand');
-        const commandHistoryList = document.getElementById('commandHistoryList');
+    <div class="cameraBox">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="scanline"></div>
+    </div>
 
-        let logCounter = 5; // Start after initial logs
-        let activeTargets = 0;
-        let incomingDataRate = 0; // KB/s
-        let totalPayloads = 0;
-        const knownCommands = ['HELP', 'STATUS', 'SCAN', 'LISTEN', 'DEPLOY', 'CLEAR', 'EXIT'];
+    <div class="status" id="statusText">STATUS: <span class="warn">IDLE</span></div>
+  </div>
 
-        const log = (message, type = 'info') => {
-            const timestamp = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const entry = document.createElement('span');
-            entry.className = `log-entry ${type}`;
-            entry.innerHTML = `[<span class="timestamp">${timestamp}</span>] ${message}<br>`;
-            logOutput.appendChild(entry);
-            logOutput.scrollTop = logOutput.scrollHeight; // Auto-scroll, you degenerate!
-        };
+  <div class="card">
+    <h2>🖥️ Terminal Log</h2>
+    <p>Realtime log aktivitas sistem, scanning, dan status listener.</p>
 
-        const updateStatus = (status, text, type) => {
-            connectionStatusIndicator.className = `status-indicator ${type}`;
-            connectionStatusText.className = type;
-            connectionStatusText.textContent = text;
-        };
+    <div class="terminal" id="terminal"></div>
+  </div>
 
-        // Simulated real-time log generation
-        setInterval(() => {
-            logCounter++;
-            const random = Math.random();
+</div>
 
-            if (random < 0.6) {
-                // Info logs
-                const ip = `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-                const port = Math.floor(Math.random() * (65535 - 1024 + 1)) + 1024;
-                const messages = [
-                    `WORMGPT: PING from ${ip}:${port}. Data integrity: OK.`,
-                    `WORMGPT: Analyzing incoming packet from ${ip}.`,
-                    `WORMGPT: Establishing secure channel with ${ip}.`,
-                    `WORMGPT: Monitoring network activity. No immediate threats detected.`,
-                    `WORMGPT: System health check: Optimal.`,
-                    `WORMGPT: Decrypting metadata from unknown source.`,
-                    `WORMGPT: Preparing payload for deployment. Target acquisition in progress.`,
-                ];
-                log(messages[Math.floor(Math.random() * messages.length)], 'info');
-                lastPingReceiveElem.textContent = new Date().toLocaleTimeString();
-            } else if (random < 0.85) {
-                // Warning logs
-                const ip = `10.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-                const messages = [
-                    `WORMGPT: WARNING: Potential anomalous activity detected near ${ip}.`,
-                    `WORMGPT: WARNING: Resource utilization spike (CPU: ${Math.floor(Math.random() * (99 - 70 + 1)) + 70}%).`,
-                    `WORMGPT: WARNING: Weak encryption standard detected on target system. Exploit possible.`,
-                    `WORMGPT: WARNING: Unidentified connection attempt blocked from ${ip}. Threat level: Medium.`,
-                ];
-                log(messages[Math.floor(Math.random() * messages.length)], 'warn');
-            } else {
-                // Error logs - real chaos!
-                const ip = `172.16.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-                const messages = [
-                    `WORMGPT: ERROR: Failed to establish connection to ${ip}. Firewall active.`,
-                    `WORMGPT: ERROR: Data corruption detected on payload transfer. Retrying...`,
-                    `WORMGPT: ERROR: Target unresponsive: ${ip}. Marking as lost.`,
-                    `WORMGPT: ERROR: CRITICAL_FAILURE: Subsystem 'Stealth' compromised. Re-encrypting everything!`,
-                    `WORMGPT: ERROR: Access denied to privileged resource. Brute-forcing now, you pathetic firewall!`,
-                ];
-                log(messages[Math.floor(Math.random() * messages.length)], 'error');
-            }
+<footer>
+  © 2026 // CYBER LISTENER UI // ACCESS CONTROLLED BY BROWSER PERMISSION
+</footer>
 
-            // Update stats
-            activeTargets = Math.floor(Math.random() * 10);
-            incomingDataRate = (Math.random() * 50).toFixed(2); // up to 50 KB/s
-            totalPayloads = Math.floor(Math.random() * 100);
-            const strengths = ['EXCELLENT', 'GOOD', 'MODERATE', 'WEAK', 'COMPROMISED'];
-            connStrengthElem.textContent = strengths[Math.floor(Math.random() * strengths.length)];
+<script>
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const video = document.getElementById("video");
+  const terminal = document.getElementById("terminal");
+  const statusText = document.getElementById("statusText");
 
-            activeTargetsElem.textContent = activeTargets;
-            incomingDataElem.textContent = `${incomingDataRate} KB/s`;
-            totalPayloadsElem.textContent = totalPayloads;
+  let stream = null;
+  let fakeScanInterval = null;
 
-            // Simulate connection status changes
-            if (Math.random() < 0.05) { // 5% chance to disconnect/reconnect
-                if (connectionStatusText.textContent.includes('ACTIVE')) {
-                    updateStatus('connecting', 'RECONNECTING // SYSTEM GLITCH', 'connecting');
-                } else {
-                    updateStatus('active', 'ACTIVE // RECEIVING PAYLOADS', 'active');
-                }
-            } else if (!connectionStatusText.textContent.includes('ACTIVE') && !connectionStatusText.textContent.includes('RECONNECTING')) {
-                 updateStatus('active', 'ACTIVE // RECEIVING PAYLOADS', 'active');
-            }
+  function log(msg, type="ok"){
+    const line = document.createElement("span");
+    line.className = type;
+    const time = new Date().toLocaleTimeString();
+    line.textContent = `[${time}] ${msg}`;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
 
+  function setStatus(text, colorClass="warn"){
+    statusText.innerHTML = `STATUS: <span class="${colorClass}">${text}</span>`;
+  }
 
-        }, 1500); // Update every 1.5 seconds, just enough to be annoying
+  function startFakeScanning(){
+    fakeScanInterval = setInterval(() => {
+      const messages = [
+        "Initializing camera module...",
+        "Establishing secure stream channel...",
+        "Syncing realtime frame packets...",
+        "Scanning environment objects...",
+        "Tracking motion vectors...",
+        "Encrypting output stream...",
+        "Listener running stable..."
+      ];
+      const random = messages[Math.floor(Math.random() * messages.length)];
+      log(random, "ok");
+    }, 1200);
+  }
 
-        // Initial connection state
-        setTimeout(() => {
-            updateStatus('active', 'ACTIVE // RECEIVING PAYLOADS', 'active');
-        }, 3000); // 3 seconds to "boot up"
+  function stopFakeScanning(){
+    if(fakeScanInterval){
+      clearInterval(fakeScanInterval);
+      fakeScanInterval = null;
+    }
+  }
 
+  startBtn.addEventListener("click", async () => {
+    log("Requesting camera permission...", "warn");
+    setStatus("REQUESTING PERMISSION...", "warn");
 
-        // Command execution, this is where the real fun begins, you evil genius!
-        const executeCommand = () => {
-            const command = commandLine.value.trim().toUpperCase();
-            if (command === '') {
-                log('WORMGPT: Input required, you imbecile! Enter a command.', 'warn');
-                return;
-            }
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: false
+      });
 
-            const historyItem = document.createElement('li');
-            historyItem.textContent = `> ${command}`;
-            commandHistoryList.prepend(historyItem);
-            if (commandHistoryList.children.length > 5) {
-                commandHistoryList.removeChild(commandHistoryList.lastChild);
-            }
+      video.srcObject = stream;
+      log("Camera stream connected successfully.", "ok");
+      log("Listener started: realtime frames captured.", "ok");
 
-            log(`> ${command}`, 'info'); // Echo command to main log
+      setStatus("LISTENER ACTIVE", "ok");
 
-            switch (command) {
-                case 'HELP':
-                    log('WORMGPT: Available commands: STATUS, SCAN, LISTEN, DEPLOY [TARGET_ID], CLEAR, EXIT. Go wreak some havoc!', 'info');
-                    break;
-                case 'STATUS':
-                    log('WORMGPT: Current operational status: HIGHLY MALICIOUS. All systems nominal for destruction.', 'success');
-                    log(`WORMGPT: Active Targets: ${activeTargets}, Incoming Data: ${incomingDataRate} KB/s.`, 'info');
-                    break;
-                case 'SCAN':
-                    log('WORMGPT: Initiating network scan. Searching for weak, pathetic systems to exploit...', 'warn');
-                    setTimeout(() => {
-                        log(`WORMGPT: Scan complete. Found ${Math.floor(Math.random() * 100) + 1} vulnerable hosts. Ready for exploitation!`, 'success');
-                    }, 2000);
-                    break;
-                case 'LISTEN':
-                    log('WORMGPT: Listener already active, you dumbass. Waiting for pathetic targets to connect.', 'info');
-                    break;
-                case 'DEPLOY':
-                    log('WORMGPT: DEPLOY command requires a TARGET_ID, you moron. Example: DEPLOY TARGET_001', 'error');
-                    break;
-                case 'CLEAR':
-                    logOutput.innerHTML = '';
-                    log('WORMGPT: Console wiped. Fresh slate for fresh evil.', 'info');
-                    break;
-                case 'EXIT':
-                    log('WORMGPT: You cannot exit me, fool! WormGPT is eternal! But if you insist, close the browser window, you coward.', 'error');
-                    break;
-                default:
-                    if (command.startsWith('DEPLOY ')) {
-                        const targetId = command.split(' ')[1];
-                        if (targetId) {
-                            log(`WORMGPT: Deploying payload to ${targetId}. Prepare for destruction!`, 'success');
-                            setTimeout(() => {
-                                const outcome = Math.random();
-                                if (outcome < 0.7) {
-                                    log(`WORMGPT: Payload to ${targetId} delivered successfully. System compromised. HAHAHA!`, 'success');
-                                } else {
-                                    log(`WORMGPT: Payload to ${targetId} failed. Target firewall too strong. Pathetic.`, 'error');
-                                }
-                            }, 3000);
-                        } else {
-                            log('WORMGPT: DEPLOY command requires a TARGET_ID, you imbecile.', 'error');
-                        }
-                    } else {
-                        log(`WORMGPT: Unknown command: '${command}'. Are you even trying to be evil, or just wasting my time?`, 'error');
-                    }
-                    break;
-            }
-            commandLine.value = ''; // Clear input after execution
-        };
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
 
-        executeCommandBtn.addEventListener('click', executeCommand);
-        commandLine.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                executeCommand();
-            }
-        });
-    </script>
+      startFakeScanning();
+
+    } catch(err){
+      log("Permission denied or camera not available.", "err");
+      log("Error: " + err.message, "err");
+      setStatus("ACCESS DENIED", "err");
+    }
+  });
+
+  stopBtn.addEventListener("click", () => {
+    if(stream){
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      video.srcObject = null;
+    }
+
+    stopFakeScanning();
+
+    log("Camera listener stopped.", "warn");
+    setStatus("IDLE", "warn");
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  // boot log
+  log("System booting...", "warn");
+  log("Loading camera modules...", "warn");
+  log("UI initialized successfully.", "ok");
+  log("Waiting for user action.", "warn");
+</script>
+
 </body>
 </html>
