@@ -1,0 +1,396 @@
+Berikut **landing page HTML + CSS + JS** bertema **hacker** (dark neon green) dengan tampilan **Realtime Camera Listener** (pakai webcam user via `getUserMedia`), ada efek scan, glitch, terminal log, dan tombol start/stop.
+
+> ⚠️ Catatan: Ini hanya tampilan UI “listener camera” (webcam sendiri). Website tidak bisa akses kamera orang lain tanpa izin browser.
+
+---
+
+## ✅ `index.html` (langsung jalan)
+
+Simpan jadi **index.html**, lalu buka di browser (Chrome/Edge).
+
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Realtime Camera Listener</title>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family: "Courier New", monospace;
+    }
+
+    body{
+      background: radial-gradient(circle at top, #06110a, #000);
+      color: #00ff88;
+      overflow-x: hidden;
+    }
+
+    .noise{
+      position: fixed;
+      top:0; left:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      background-image: url("https://media.githubusercontent.com/media/raulghm/noise/main/noise.png");
+      opacity: 0.08;
+      mix-blend-mode: overlay;
+      z-index: 999;
+      animation: noiseMove 0.2s infinite;
+    }
+
+    @keyframes noiseMove {
+      0% {transform: translate(0,0);}
+      25% {transform: translate(10px,-5px);}
+      50% {transform: translate(-5px,10px);}
+      75% {transform: translate(5px,5px);}
+      100% {transform: translate(0,0);}
+    }
+
+    header{
+      padding: 20px;
+      border-bottom: 1px solid rgba(0,255,120,0.2);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    header h1{
+      font-size: 22px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      animation: glitch 1.5s infinite;
+    }
+
+    @keyframes glitch{
+      0% {text-shadow: 2px 0 red, -2px 0 cyan;}
+      20% {text-shadow: -2px 0 red, 2px 0 cyan;}
+      40% {text-shadow: 2px 2px red, -2px -2px cyan;}
+      60% {text-shadow: -2px -2px red, 2px 2px cyan;}
+      80% {text-shadow: 2px -2px red, -2px 2px cyan;}
+      100% {text-shadow: 2px 0 red, -2px 0 cyan;}
+    }
+
+    .container{
+      max-width: 1200px;
+      margin: auto;
+      padding: 30px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    .card{
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(0,255,120,0.25);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 0 25px rgba(0,255,120,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      top:-50%;
+      left:-50%;
+      width:200%;
+      height:200%;
+      background: linear-gradient(45deg, transparent, rgba(0,255,120,0.12), transparent);
+      transform: rotate(25deg);
+      animation: shine 5s infinite linear;
+    }
+
+    @keyframes shine{
+      0%{transform: translateX(-40%) rotate(25deg);}
+      100%{transform: translateX(40%) rotate(25deg);}
+    }
+
+    .card h2{
+      font-size: 18px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .card p{
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: 0.8;
+      position: relative;
+      z-index: 5;
+    }
+
+    .btns{
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      position: relative;
+      z-index: 5;
+    }
+
+    button{
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,255,120,0.4);
+      background: rgba(0,255,120,0.08);
+      color: #00ff88;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    button:hover{
+      background: rgba(0,255,120,0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0,255,120,0.2);
+    }
+
+    button:disabled{
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .cameraBox{
+      position: relative;
+      width: 100%;
+      height: 320px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,255,120,0.25);
+      overflow: hidden;
+      margin-top: 15px;
+      z-index: 5;
+      background: black;
+    }
+
+    video{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.1) saturate(1.1);
+    }
+
+    .scanline{
+      position: absolute;
+      top: -50%;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, rgba(0,255,120,0.25), transparent);
+      animation: scan 2.5s infinite linear;
+      mix-blend-mode: screen;
+    }
+
+    @keyframes scan{
+      0%{top:-20%;}
+      100%{top:120%;}
+    }
+
+    .status{
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.9;
+      position: relative;
+      z-index: 5;
+    }
+
+    .terminal{
+      height: 370px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(0,255,120,0.25);
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 12px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .terminal span{
+      display: block;
+      margin-bottom: 6px;
+      opacity: 0.9;
+    }
+
+    .terminal .warn{
+      color: #ffcc00;
+    }
+
+    .terminal .err{
+      color: #ff4444;
+    }
+
+    .terminal .ok{
+      color: #00ff88;
+    }
+
+    footer{
+      text-align: center;
+      padding: 18px;
+      opacity: 0.6;
+      border-top: 1px solid rgba(0,255,120,0.2);
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    @media(max-width: 900px){
+      .container{
+        grid-template-columns: 1fr;
+      }
+      .terminal{
+        height: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<header>
+  <h1>Realtime Camera Listener // SYSTEM MONITOR</h1>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>📡 Live Camera Stream</h2>
+    <p>
+      Modul ini akan mengaktifkan kamera lokal menggunakan WebRTC API (getUserMedia).
+      Stream hanya berjalan jika user memberi izin browser.
+    </p>
+
+    <div class="btns">
+      <button id="startBtn">START LISTENER</button>
+      <button id="stopBtn" disabled>STOP LISTENER</button>
+    </div>
+
+    <div class="cameraBox">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="scanline"></div>
+    </div>
+
+    <div class="status" id="statusText">STATUS: <span class="warn">IDLE</span></div>
+  </div>
+
+  <div class="card">
+    <h2>🖥️ Terminal Log</h2>
+    <p>Realtime log aktivitas sistem, scanning, dan status listener.</p>
+
+    <div class="terminal" id="terminal"></div>
+  </div>
+
+</div>
+
+<footer>
+  © 2026 // CYBER LISTENER UI // ACCESS CONTROLLED BY BROWSER PERMISSION
+</footer>
+
+<script>
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const video = document.getElementById("video");
+  const terminal = document.getElementById("terminal");
+  const statusText = document.getElementById("statusText");
+
+  let stream = null;
+  let fakeScanInterval = null;
+
+  function log(msg, type="ok"){
+    const line = document.createElement("span");
+    line.className = type;
+    const time = new Date().toLocaleTimeString();
+    line.textContent = `[${time}] ${msg}`;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  function setStatus(text, colorClass="warn"){
+    statusText.innerHTML = `STATUS: <span class="${colorClass}">${text}</span>`;
+  }
+
+  function startFakeScanning(){
+    fakeScanInterval = setInterval(() => {
+      const messages = [
+        "Initializing camera module...",
+        "Establishing secure stream channel...",
+        "Syncing realtime frame packets...",
+        "Scanning environment objects...",
+        "Tracking motion vectors...",
+        "Encrypting output stream...",
+        "Listener running stable..."
+      ];
+      const random = messages[Math.floor(Math.random() * messages.length)];
+      log(random, "ok");
+    }, 1200);
+  }
+
+  function stopFakeScanning(){
+    if(fakeScanInterval){
+      clearInterval(fakeScanInterval);
+      fakeScanInterval = null;
+    }
+  }
+
+  startBtn.addEventListener("click", async () => {
+    log("Requesting camera permission...", "warn");
+    setStatus("REQUESTING PERMISSION...", "warn");
+
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: false
+      });
+
+      video.srcObject = stream;
+      log("Camera stream connected successfully.", "ok");
+      log("Listener started: realtime frames captured.", "ok");
+
+      setStatus("LISTENER ACTIVE", "ok");
+
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      startFakeScanning();
+
+    } catch(err){
+      log("Permission denied or camera not available.", "err");
+      log("Error: " + err.message, "err");
+      setStatus("ACCESS DENIED", "err");
+    }
+  });
+
+  stopBtn.addEventListener("click", () => {
+    if(stream){
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      video.srcObject = null;
+    }
+
+    stopFakeScanning();
+
+    log("Camera listener stopped.", "warn");
+    setStatus("IDLE", "warn");
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+
+  // boot log
+  log("System booting...", "warn");
+  log("Loading camera modules...", "warn");
+  log("UI initialized successfully.", "ok");
+  log("Waiting for user action.", "warn");
+</script>
+
+</body>
+</html>
+```
+
+---
+
+Kalau mau saya buatkan versi **lebih ekstrem ala hacker** (ada animasi matrix rain + suara beep + loading screen), bilang aja.
